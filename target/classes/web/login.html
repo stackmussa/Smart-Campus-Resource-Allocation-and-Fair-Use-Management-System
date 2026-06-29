@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SCRAFMS – Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;
+  justify-content:center;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);}
+.login-card{background:white;border-radius:20px;padding:42px 40px;
+  width:420px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo h1{font-size:32px;font-weight:800;color:#1a2332;letter-spacing:-1px;}
+.login-logo p{color:#64748b;font-size:14px;margin-top:6px;line-height:1.4;}
+hr{border:none;border-top:1px solid #e2e8f0;margin:22px 0;}
+.form-group{margin-bottom:16px;}
+label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;}
+.input-wrap{position:relative;}
+.input-wrap i.icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  color:#94a3b8;font-size:15px;pointer-events:none;}
+input[type=text],input[type=email],input[type=password]{
+  width:100%;padding:11px 14px 11px 40px;border:1.5px solid #d1d5db;
+  border-radius:9px;font-size:14px;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color 0.18s;color:#1e293b;background:white;}
+input:focus{border-color:#4f8ef7;box-shadow:0 0 0 3px rgba(79,142,247,0.12);}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;font-size:15px;}
+.btn-signin{width:100%;padding:13px;background:#1a2332;color:white;
+  border:none;border-radius:9px;font-size:15px;font-weight:600;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:background 0.18s;
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;}
+.btn-signin:hover{background:#232f45;}
+.btn-signin:disabled{background:#64748b;cursor:not-allowed;}
+.error-box{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;
+  border-radius:9px;padding:12px 14px;font-size:14px;display:none;margin-top:14px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,0.4);
+  border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;display:none;}
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="login-logo">
+    <h1>SCRAFMS</h1>
+    <p>Smart Campus Resource Allocation<br>and Fair-Use Management System</p>
+  </div>
+  <hr>
+  <form id="login-form" onsubmit="handleLogin(event)">
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <div class="input-wrap">
+        <i class="bi bi-envelope icon"></i>
+        <input type="email" id="email" placeholder="you@scrafms.com" required autocomplete="email">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <i class="bi bi-lock icon"></i>
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        <button type="button" class="eye-btn" onclick="togglePwd()" id="eye-btn">
+          <i class="bi bi-eye" id="eye-icon"></i>
+        </button>
+      </div>
+    </div>
+    <button type="submit" class="btn-signin" id="signin-btn">
+      <div class="spinner" id="spinner"></div>
+      <span id="btn-text">Sign In</span>
+    </button>
+    <div class="error-box" id="error-box"></div>
+  </form>
+</div>
+<script>
+const API = 'http://localhost:8080/api';
+
+// Check if already logged in
+(async function(){
+  try {
+    const res = await fetch(API + '/auth/me', {credentials:'include'});
+    const d = await res.json();
+    if (d.success) redirect(d.data.role);
+  } catch(e){}
+})();
+
+function redirect(role) {
+  if (role === 'ADMIN')   window.location.href = '/admin-dashboard.html';
+  else if (role === 'MANAGER') window.location.href = '/manager-dashboard.html';
+  else window.location.href = '/student-dashboard.html';
+}
+
+function togglePwd() {
+  const p = document.getElementById('password');
+  const i = document.getElementById('eye-icon');
+  if (p.type === 'password') {
+    p.type = 'text'; i.className = 'bi bi-eye-slash';
+  } else {
+    p.type = 'password'; i.className = 'bi bi-eye';
+  }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errBox = document.getElementById('error-box');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btn-text');
+  const btn = document.getElementById('signin-btn');
+
+  errBox.style.display = 'none';
+  spinner.style.display = 'block';
+  btnText.textContent = 'Signing in…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    const d = await res.json();
+    if (d.success) {
+      redirect(d.data.role);
+    } else {
+      throw new Error(d.error || 'Invalid credentials');
+    }
+  } catch(err) {
+    errBox.textContent = err.message || 'Login failed. Please try again.';
+    errBox.style.display = 'block';
+    spinner.style.display = 'none';
+    btnText.textContent = 'Sign In';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
